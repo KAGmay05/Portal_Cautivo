@@ -1,0 +1,100 @@
+/* Fondo con video */
+#bg-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+}
+* {
+    box-sizing: border-box;
+}
+/* Cuerpo */
+body {
+    font-family: "Segoe UI", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* Contenedor principal */
+.container {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 25px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    width: 620px;            /* 🔹 Más pequeño */
+    padding: 60px;           /* 🔹 Menos espacio interno */
+    text-align: center;
+    transform: translateY(-20px);
+}
+
+/* Título */
+h1 {
+    color: #064e3b;
+    font-size: 55px;         /* 🔹 Más pequeño que antes */
+    font-weight: 800;
+    margin-bottom: 25px;
+}
+
+/* Texto descriptivo */
+p {
+    color: #333;
+    font-size: 20px;         /* 🔹 Un poco más chico */
+    margin-bottom: 30px;
+}
+
+/* Etiquetas */
+label {
+    display: block;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #064e3b;
+    font-size: 22px;         /* 🔹 Más pequeño */
+}
+
+/* Campos de entrada */
+input {
+    width: 100%;
+    padding: 15px;           /* 🔹 Menos alto */
+    margin-top: 8px;
+    border: 2px solid #064e3b;
+    border-radius: 12px;
+    font-size: 20px;         /* 🔹 Texto más chico */
+    outline: none;
+}
+
+input:focus {
+    border-color: #0a684f;
+    box-shadow: 0 0 8px rgba(6, 78, 59, 0.4);
+}
+
+/* Botón */
+button {
+    width: 100%;
+    padding: 18px;           /* 🔹 Más chico */
+    margin-top: 30px;
+    border: 2px solid #064e3b;
+    background-color: #064e3b;
+    color: white;
+    border-radius: 12px;
+    font-size: 22px;         /* 🔹 Texto más pequeño */
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background-color: #0a684f;
+    transform: scale(1.03);
+}
+
+/* Pie de página */
+footer {
+    margin-top: 30px;
+    font-size: 16px;
+    color: #666;
+}

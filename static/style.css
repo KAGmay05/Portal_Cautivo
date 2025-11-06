@@ -1,0 +1,17 @@
+#background-video {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  min-width: 100%;
+  min-height: 100%;
+  z-index: -1; /* para que quede detrás del contenido */
+  object-fit: cover; /* ajusta el video al tamaño de la pantalla */
+}
+
+.content {
+  position: relative;
+  text-align: center;
+  color: white;
+  font-family: "Segoe UI", sans-serif;
+  top: 40%;
+}
