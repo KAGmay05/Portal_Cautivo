@@ -11,10 +11,17 @@
         <source src="{{ url_for('static', filename='background.mp4') }}" type="video/mp4">
         Tu navegador no soporta el video de fondo.
     </video>
+    
+    {% if message %}
+        <div class="alert {{ message_type }}">
+            {{ message }}
+        </div>
+    {% endif %}
+    
     <div class="container">
         <h1>Portal Cautivo</h1>
         <p>Por favor, inicia sesión para obtener acceso a Internet.</p>
-
+        
         <form action="/login" method="POST">
             <label for="username">Usuario</label>
             <input type="text" id="username" name="username" required>
