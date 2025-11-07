@@ -1,0 +1,12 @@
+[
+{ "username": "admin",      "password": "Admin2025" },
+{ "username": "adriana",    "password": "Portal2025" },
+{ "username": "usuario1",   "password": "clave1" },
+{ "username": "soporte",    "password": "Soporte987" },
+{ "username": "invitado",   "password": "guest2025" },
+{ "username": "developer",  "password": "Dev!2025Dev" },
+{ "username": "operador",   "password": "Op3r@2025" },
+{ "username": "test_user",  "password": "Test1234!" },
+{ "username": "analista",   "password": "Anal1sis2025" },
+{ "username": "demo",       "password": "DemoPass2025" }
+]
