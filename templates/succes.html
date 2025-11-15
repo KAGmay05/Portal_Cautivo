@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Concedido</title>
+    <link rel="stylesheet" href="/static/style.css">
+
+</head>
+<body>
+    <video autoplay muted loop id="bg-video">
+         <source src="/static/background.mp4" type="video/mp4">
+        Tu navegador no soporta el video de fondo.
+    </video>
+
+    <div class="container">
+        <h1>¡Autenticado!</h1>
+        <p>Bienvenido, ya tienes acceso a Internet.</p>
+
+        <button onclick="window.location.href='https://www.google.com'">
+            Continuar navegando
+        </button>
+
+        <footer>© 2025 Portal Cautivo - Acceso Autorizado</footer>
+    </div>
+</body>
+</html>
