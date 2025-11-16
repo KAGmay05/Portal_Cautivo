@@ -2,7 +2,7 @@
 
 CLIENT_IP="$1"
 
-if[ -z "$CLIENT_IP" ]; then
+if [ -z "$CLIENT_IP" ]; then
     echo "Uso: ./internet_unlock.sh <IP_DEL_CLIENTE>"
     exit 1
 fi

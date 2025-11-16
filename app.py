@@ -46,7 +46,7 @@ def get_mime_type(path: Path) -> str:
 
 def parse_post_data(body: bytes):
     data = {}
-    for pair in body.decode("utf-8").split("&"):
+    for pair in body.decode("utf-8", errors="ignore").split("&"):
         if "=" in pair:
             key, value = pair.split("=", 1)
             data[key] = value
@@ -71,8 +71,8 @@ def handle_client(conn, addr):
             return
         
         headers, _, body = request.partition(b"\r\n\r\n")
-        request_line = headers.split(b"\r\n")[0].decode("utf-8")
-        method, target, _ = request_line.split(" ")
+        request_line = headers.split(b"\r\n")[0].decode("utf-8", errors="ignore")
+        method, target, _ = request_line.split(" ",2)
 
         print(f"{addr} -> {method} {target}")
 
