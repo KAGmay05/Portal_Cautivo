@@ -7,7 +7,7 @@ if [ -z "$CLIENT_IP" ]; then
     exit 1
 fi
 
-iptables -I FORWARD -s $CLIENT_IP -j ACCEPT
-iptables -I FORWARD -d $CLIENT_IP -j ACCEPT
+iptables -I FORWARD 1 -s $CLIENT_IP -j ACCEPT
+iptables -I FORWARD 1 -d $CLIENT_IP -j ACCEPT
 
 echo "Cliente $CLIENT_IP desbloqueado. Ya tiene acceso a Internet."
