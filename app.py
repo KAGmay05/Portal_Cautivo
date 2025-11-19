@@ -1,19 +1,14 @@
 from users import check_credentials
-from session_manager import ip_in_use, register_session
 import socket
 import threading
 from pathlib import Path
 import os
-import signal
-import sys
-import json
 
 HOST = "0.0.0.0"
 PORT = 8000
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
-SESSION_FILE = BASE_DIR / "sessions.json"
 
 def build_response(status_code, body=b"", content_type="text/plain; charset=utf-8"):
     reason = {
@@ -97,17 +92,12 @@ def handle_client(conn, addr):
             username = post_data.get("username", "")
             password = post_data.get("password", "")
             print("Post Data:", post_data)
-            client_ip = addr[0]
-            if ip_in_use(client_ip):
-                print("Intento de suplantación detectado desde", client_ip)
-                conn.sendall(redirect("/?error=suplantacion"))
-                conn.close()
-                return
 
             if check_credentials(username, password):
                 print("Login successful")
-                register_session(username, client_ip)
+                client_ip = addr[0]
                 os.system(f"sudo ./internet_unlock.sh {client_ip}")
+
                 conn.sendall(redirect("/succes"))
             else:
                 print("Login failed")
@@ -170,25 +160,7 @@ def run_server():
             t.start()
 
 
-def cleanup(*args):
-    print("\nCerrando servidor...")
-    try:
-        # Sobrescribir con JSON vacío
-        with open(SESSION_FILE, "w") as f:
-            json.dump([], f)
-        print("session.json limpiado correctamente.")
-    except Exception as e:
-        print("Error al limpiar session.json:", e)
-
-    sys.exit(0)
-
-# Capturar Ctrl+C y señales del sistema
-signal.signal(signal.SIGINT, cleanup)
-signal.signal(signal.SIGTERM, cleanup)
-
 if __name__ == "__main__":
-    try:
-        run_server()
-    except KeyboardInterrupt:
-        cleanup()
+    run_server()
+
     
