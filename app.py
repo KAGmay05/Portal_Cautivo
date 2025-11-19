@@ -3,6 +3,7 @@ import socket
 import threading
 from pathlib import Path
 import os
+import ssl
 
 HOST = "0.0.0.0"
 PORT = 8000
@@ -146,6 +147,8 @@ def handle_client(conn, addr):
         conn.close()
 
 def run_server():
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(certfile="certs/portal.crt", keyfile="certs/portal.key")   
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((HOST, PORT))
@@ -155,8 +158,9 @@ def run_server():
 
         while True:
             conn, addr = s.accept()
+            secure_conn = context.wrap_socket(conn,server_side=True)
             # Cada cliente en un hilo distinto
-            t = threading.Thread(target=handle_client, args=(conn, addr), daemon=True)
+            t = threading.Thread(target=handle_client, args=(secure_conn, addr), daemon=True)
             t.start()
 
 
