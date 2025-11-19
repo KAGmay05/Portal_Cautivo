@@ -3,12 +3,22 @@ import socket
 import threading
 from pathlib import Path
 import os
+import subprocess
 
 HOST = "0.0.0.0"
 PORT = 8000
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
+
+def get_mac(ip: str):
+    try:
+        output = subprocess.check_output(["arp", "-n", ip]).decode()
+        for line in output.split("\n"):
+            if ip in line:
+                return line.split()[2]  # tercer campo = MAC
+    except:
+        return None
 
 def build_response(status_code, body=b"", content_type="text/plain; charset=utf-8"):
     reason = {
@@ -96,9 +106,15 @@ def handle_client(conn, addr):
             if check_credentials(username, password):
                 print("Login successful")
                 client_ip = addr[0]
-                os.system(f"sudo ./internet_unlock.sh {client_ip}")
-
-                conn.sendall(redirect("/succes"))
+                client_mac = get_mac(client_ip)
+                print(f"Cliente autenticado â†’ IP: {client_ip}, MAC: {client_mac}")
+                
+                if client_mac:
+                    os.system(f"sudo ./internet_unlock.sh {client_ip} {client_mac}")
+                    conn.sendall(redirect("/succes"))
+                else:
+                    print("ERROR: No se pudo obtener la MAC del cliente")
+                
             else:
                 print("Login failed")
                 conn.sendall(redirect("/?error=1"))    
