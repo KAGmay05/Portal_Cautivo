@@ -126,7 +126,21 @@ def handle_client(conn, addr):
           content = static_path.read_bytes()
           conn.sendall(build_response(200, content, get_mime_type(static_path)))
           return
-
+        
+        captive_detection_paths = [
+            "/generate_204",
+            "/gen_204",
+            "/hotspot-detect.html",
+            "/connecttest.txt",
+            "/ncsi.txt",
+            "check_network_status.txt"
+        ]
+        
+        if target in captive_detection_paths:
+            conn.sendall(redirect("/login.html"))
+            conn.close()
+            return
+        
         # Archivos HTML
         html_path = (TEMPLATE_DIR / target.lstrip("/")).resolve()
         if not html_path.exists():
