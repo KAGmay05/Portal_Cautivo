@@ -15,10 +15,10 @@ iptables -t nat -F
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
 # 1. Redirigir HTTP al portal
-iptables -t nat -A PREROUTING -i $INT -p tcp --dport 80 -j DNAT --to-destination $SERVER_IP:$HTTP_PORT
+iptables -t nat -A PREROUTING -i $INT -p tcp --dport 80 -j REDIRECT --to-port "$HTTP_PORT"
 
 # 2. Redirigir DNS a nuestro DNS responder
-iptables -t nat -A PREROUTING -i $INT -p udp --dport 53 -j DNAT --to-destination $SERVER_IP:53
+# iptables -t nat -A PREROUTING -i $INT -p udp --dport 53 -j DNAT --to-destination $SERVER_IP:53
 iptables -A FORWARD -i $INT -o $OUT -p udp --dport 53 -j ACCEPT
 iptables -A FORWARD -i $INT -o $OUT -p tcp --dport 53 -j ACCEPT
 
