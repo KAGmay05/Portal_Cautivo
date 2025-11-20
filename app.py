@@ -13,12 +13,14 @@ STATIC_DIR = BASE_DIR / "static"
 
 def get_mac(ip: str):
     try:
-        output = subprocess.check_output(["arp", "-n", ip]).decode()
-        for line in output.split("\n"):
-            if ip in line:
-                return line.split()[2]  # tercer campo = MAC
+        output = subprocess.check_output(["ip", "neigh", "show", ip]).decode()
+        parts = output.split()
+        if "lladdr" in parts:
+            return parts[parts.index("lladdr") + 1]
+        return None
     except:
         return None
+
 
 def build_response(status_code, body=b"", content_type="text/plain; charset=utf-8"):
     reason = {
@@ -106,6 +108,7 @@ def handle_client(conn, addr):
             if check_credentials(username, password):
                 print("Login successful")
                 client_ip = addr[0]
+                os.system(f"ping -c 1 -W 1 {client_ip} > /dev/null")
                 client_mac = get_mac(client_ip)
                 print(f"Cliente autenticado â†’ IP: {client_ip}, MAC: {client_mac}")
                 

@@ -8,6 +8,8 @@ if [ -z "$CLIENT_IP" ] || [ -z "$CLIENT_MAC" ]; then
     exit 1
 fi
 
+echo "$CLIENT_MAC $CLIENT_IP" >> /var/log/portal_clients.db
+
 iptables -I FORWARD -s $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
 iptables -I FORWARD -d $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
 
