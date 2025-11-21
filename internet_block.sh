@@ -11,18 +11,10 @@ OUT="enx3687cd8187f5"
 iptables -F
 iptables -t nat -F
 
-# Habilitar routing
-# echo 1 > /proc/sys/net/ipv4/ip_forward
-sysctl -w net.ipv4.ip_forward=1 > /dev/null
-iptables -P INPUT ACCEPT
-iptables -P OUTPUT ACCEPT
-iptables -P FORWARD DROP
-
-iptables -A FORWARD -i $INT -o $OUT -p udp --dport 53 -j ACCEPT
-iptables -A FORWARD -i $INT -o $OUT -p tcp --dport 53 -j ACCEPT
-
-iptables -t nat -A PREROUTING -i $INT -p tcp --dport 80 -j REDIRECT --to-port "$HTTP_PORT"
-
-echo "Portal cautivo ACTIVADO."
-echo "DNS + redirección HTTP funcionando."
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A POSTROUTING -o $INT -j MASQUERADE
+iptables -A FORWARD -i $INT -j DROP
+iptables -A INPUT -p tcp --dport 8000 -j ACCEPT
+iptables -t nat -A PREROUTING -i $INT -p tcp --dport 8000 -j DNAT --to-destination $SERVER_IP:8000
+iptables -A INPUT -i lo -j ACCEPT
 

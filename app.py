@@ -1,10 +1,10 @@
-import os
+from users import check_credentials
+from session_manager import register_session
 import socket
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from urllib.parse import parse_qs
-
-from users import check_credentials
+import os
+import subprocess
 
 HOST = "0.0.0.0"
 PORT = 8000
@@ -14,24 +14,18 @@ STATIC_DIR = BASE_DIR / "static"
 MAX_HEADER_SIZE = 16 * 1024
 MAX_WORKERS = 50
 
-CAPTIVE_PROBE_PATHS = {
-    "/generate_204",
-    "/gen_204",
-    "/connecttest.txt",
-    "/ncsi.txt",
-    "/msftconnecttest.html",
-    "/hotspot-detect.html",
-    "/library/test/success.html",
-    "/kindle-wifi/wifistub.html",
-}
+def get_mac(ip: str):
+    try:
+        output = subprocess.check_output(["ip", "neigh", "show", ip]).decode()
+        parts = output.split()
+        if "lladdr" in parts:
+            return parts[parts.index("lladdr") + 1]
+        return None
+    except:
+        return None
 
-def build_response(
-    status_code,
-    body=b"",
-    content_type="text/plain; charset=utf-8",
-    extra_headers=None,
-    content_length=None,
-):
+
+def build_response(status_code, body=b"", content_type="text/plain; charset=utf-8"):
     reason = {
         200: "OK",
         400: "Bad Request",
@@ -171,11 +165,23 @@ def handle_client(conn, addr):
             print("Post Data:", post_data)
 
             if check_credentials(username, password):
-                print("Login successful")
                 client_ip = addr[0]
-                os.system(f"sudo ./internet_unlock.sh {client_ip}")
-
-                conn.sendall(redirect("/succes"))
+                os.system(f"ping -c 1 -W 1 {client_ip} > /dev/null")
+                client_mac = get_mac(client_ip)
+                ok, registered = register_session(client_ip, client_mac)
+                
+                if not ok:
+                    print(f"⚠️ SUPLANTACIÓN DETECTADA: IP {client_ip} ya estaba registrada con MAC {registered}, pero llegó MAC {client_mac}")
+                    conn.sendall(build_response(403, b"IP spoofing detected"))
+                    return
+                
+                else:
+                    # ✔️ Aquí solo entra si NO hay suplantación
+                    os.system(f"sudo ./internet_unlock.sh {client_ip} {client_mac}")
+                    print("Login successful")
+                    conn.sendall(redirect("/succes"))
+                    return
+              
             else:
                 print("Login failed")
                 conn.sendall(redirect("/?error=1"))    
