@@ -2,13 +2,12 @@
 
 CLIENT_IP="$1"
 CLIENT_MAC="$2"
+DB="/var/log/portal_clients.db"
 
-if [ -z "$CLIENT_IP" ] || [ -z "$CLIENT_MAC" ]; then
-    echo "Uso: ./internet_unlock.sh <IP_DEL_CLIENTE> <MAC_DEL_CLIENTE>"
-    exit 1
-fi
+[[ -z "$CLIENT_IP" || -z "$CLIENT_MAC" ]] && exit 1
 
-echo "$CLIENT_MAC $CLIENT_IP" >> /var/log/portal_clients.db
+# Evitar duplicados
+grep -qi "$CLIENT_MAC $CLIENT_IP" "$DB" || echo "$CLIENT_MAC $CLIENT_IP" >> "$DB"
 
 iptables -I FORWARD -s $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
 iptables -I FORWARD -d $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT

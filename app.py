@@ -1,4 +1,5 @@
 from users import check_credentials
+from session_manager import register_session
 import socket
 import threading
 from pathlib import Path
@@ -106,18 +107,23 @@ def handle_client(conn, addr):
             print("Post Data:", post_data)
 
             if check_credentials(username, password):
-                print("Login successful")
                 client_ip = addr[0]
                 os.system(f"ping -c 1 -W 1 {client_ip} > /dev/null")
                 client_mac = get_mac(client_ip)
-                print(f"Cliente autenticado â†’ IP: {client_ip}, MAC: {client_mac}")
+                ok, registered = register_session(client_ip, client_mac)
                 
-                if client_mac:
-                    os.system(f"sudo ./internet_unlock.sh {client_ip} {client_mac}")
-                    conn.sendall(redirect("/succes"))
+                if not ok:
+                    print(f"⚠️ SUPLANTACIÓN DETECTADA: IP {client_ip} ya estaba registrada con MAC {registered}, pero llegó MAC {client_mac}")
+                    conn.sendall(build_response(403, b"IP spoofing detected"))
+                    return
+                
                 else:
-                    print("ERROR: No se pudo obtener la MAC del cliente")
-                
+                    # ✔️ Aquí solo entra si NO hay suplantación
+                    os.system(f"sudo ./internet_unlock.sh {client_ip} {client_mac}")
+                    print("Login successful")
+                    conn.sendall(redirect("/succes"))
+                    return
+              
             else:
                 print("Login failed")
                 conn.sendall(redirect("/?error=1"))    
