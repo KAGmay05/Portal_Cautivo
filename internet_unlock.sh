@@ -1,13 +1,15 @@
 #!/bin/bash
 
 CLIENT_IP="$1"
+CLIENT_MAC="$2"
+DB="/var/log/portal_clients.db"
 
-if [ -z "$CLIENT_IP" ]; then
-    echo "Uso: ./internet_unlock.sh <IP_DEL_CLIENTE>"
-    exit 1
-fi
+[[ -z "$CLIENT_IP" || -z "$CLIENT_MAC" ]] && exit 1
 
-iptables -I FORWARD -s $CLIENT_IP -j ACCEPT
-iptables -I FORWARD -d $CLIENT_IP -j ACCEPT
+# Evitar duplicados
+grep -qi "$CLIENT_MAC $CLIENT_IP" "$DB" || echo "$CLIENT_MAC $CLIENT_IP" >> "$DB"
+
+iptables -I FORWARD -s $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
+iptables -I FORWARD -d $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
 
 echo "Cliente $CLIENT_IP desbloqueado. Ya tiene acceso a Internet."
