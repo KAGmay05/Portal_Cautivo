@@ -18,16 +18,10 @@ iptables -P INPUT ACCEPT
 iptables -P OUTPUT ACCEPT
 iptables -P FORWARD DROP
 
-# 2. Redirigir DNS a nuestro DNS responder
-# iptables -t nat -A PREROUTING -i $INT -p udp --dport 53 -j DNAT --to-destination $SERVER_IP:53
 iptables -A FORWARD -i $INT -o $OUT -p udp --dport 53 -j ACCEPT
 iptables -A FORWARD -i $INT -o $OUT -p tcp --dport 53 -j ACCEPT
 
-# 1. Redirigir HTTP al portal
 iptables -t nat -A PREROUTING -i $INT -p tcp --dport 80 -j REDIRECT --to-port "$HTTP_PORT"
-
-
-
 
 echo "Portal cautivo ACTIVADO."
 echo "DNS + redirección HTTP funcionando."

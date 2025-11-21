@@ -146,9 +146,23 @@ def handle_client(conn, addr):
         print(f"{addr} -> {method} {target}")
 
         probe_path = target.split("?", 1)[0]
-        if probe_path in CAPTIVE_PROBE_PATHS:
-            conn.sendall(redirect("/login.html"))
-            return
+
+        # Captive portal detection para Windows
+        if probe_path in CAPTIVE_PROBE_PATHS or probe_path.startswith("/msftconnecttest") or probe_path.startswith("/msftncsi") or probe_path == "/redirect":
+           print("Windows probe detected:", probe_path)
+    
+         # Responder 302 con Location al login.html y body vacío
+           response = (
+              b"HTTP/1.1 302 Found\r\n"
+              b"Location: /login.html\r\n"
+              b"Cache-Control: no-store, no-cache, must-revalidate\r\n"
+              b"Pragma: no-cache\r\n"
+              b"Content-Length: 0\r\n"
+              b"Connection: close\r\n\r\n"
+             )
+           conn.sendall(response)
+           return
+
 
         if method == "POST" and target == "/login":
             post_data = parse_post_data(body)
