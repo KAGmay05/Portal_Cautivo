@@ -1,9 +1,13 @@
 #!/bin/bash
 
-# tu interfaz
+set -e 
+
 INT="wlo1"
 SERVER_IP="10.42.0.1"
+HTTP_PORT=8000
+OUT="enx3687cd8187f5"
 
+# Limpiar reglas
 iptables -F
 iptables -t nat -F
 
@@ -14,4 +18,3 @@ iptables -A INPUT -p tcp --dport 8000 -j ACCEPT
 iptables -t nat -A PREROUTING -i $INT -p tcp --dport 8000 -j DNAT --to-destination $SERVER_IP:8000
 iptables -A INPUT -i lo -j ACCEPT
 
-echo "Portal cautivo ACTIVADO. Todo tráfico bloqueado excepto el login."
