@@ -1,19 +1,31 @@
-from users import check_credentials
-from session_manager import register_session
+import os
 import socket
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-import os
-import subprocess
+from urllib.parse import parse_qs
+import ssl
+from users import check_credentials
+import threading
 
 HOST = "0.0.0.0"
-PORT = 8000
+HTTPS_PORT = 443
+HTTP_PORT = 80
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 MAX_HEADER_SIZE = 16 * 1024
 MAX_WORKERS = 50
 
+CAPTIVE_PROBE_PATHS = {
+    "/generate_204",
+    "/gen_204",
+    "/connecttest.txt",
+    "/ncsi.txt",
+    "/msftconnecttest.html",
+    "/hotspot-detect.html",
+    "/library/test/success.html",
+    "/kindle-wifi/wifistub.html",
+}
 def get_mac(ip: str):
     try:
         output = subprocess.check_output(["ip", "neigh", "show", ip]).decode()
@@ -25,7 +37,14 @@ def get_mac(ip: str):
         return None
 
 
-def build_response(status_code, body=b"", content_type="text/plain; charset=utf-8"):
+
+def build_response(
+    status_code,
+    body=b"",
+    content_type="text/plain; charset=utf-8",
+    extra_headers=None,
+    content_length=None,
+):
     reason = {
         200: "OK",
         400: "Bad Request",
@@ -143,19 +162,19 @@ def handle_client(conn, addr):
 
         # Captive portal detection para Windows
         if probe_path in CAPTIVE_PROBE_PATHS or probe_path.startswith("/msftconnecttest") or probe_path.startswith("/msftncsi") or probe_path == "/redirect":
-           print("Windows probe detected:", probe_path)
-    
-         # Responder 302 con Location al login.html y body vacío
-           response = (
-              b"HTTP/1.1 302 Found\r\n"
-              b"Location: /login.html\r\n"
-              b"Cache-Control: no-store, no-cache, must-revalidate\r\n"
-              b"Pragma: no-cache\r\n"
-              b"Content-Length: 0\r\n"
-              b"Connection: close\r\n\r\n"
-             )
-           conn.sendall(response)
-           return
+            print("Windows probe detected:", probe_path)
+            
+            # Responder 302 con Location al login.html y body vacío
+            response = (
+                b"HTTP/1.1 302 Found\r\n"
+                b"Location: /login.html\r\n"
+                b"Cache-Control: no-store, no-cache, must-revalidate\r\n"
+                b"Pragma: no-cache\r\n"
+                b"Content-Length: 0\r\n"
+                b"Connection: close\r\n\r\n"
+            )
+            conn.sendall(response)
+            return
 
 
         if method == "POST" and target == "/login":
@@ -243,20 +262,49 @@ def handle_client(conn, addr):
     finally:
         conn.close()
 
-def run_server():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s, ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+def run_https_server():
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(certfile="certs/portal.crt", keyfile="certs/portal.key")
+    
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind((HOST, PORT))
-        s.listen()
-        print(f"Servidor escuchando en http://{HOST}:{PORT}")
-        print("Sirviendo archivos desde", BASE_DIR)
+        s.bind((HOST, HTTPS_PORT))
+        s.listen(5)
+        print(f"Servidor HTTPS escuchando en https://{HOST}:{HTTPS_PORT}")
 
         while True:
             conn, addr = s.accept()
-            executor.submit(handle_client, conn, addr)
+            try:
+                secure_conn = context.wrap_socket(conn, server_side=True)
+            except ssl.SSLError as e:
+                print(f"[SSL ERROR] {addr} -> {e}")
+                conn.close()
+                continue  # no mata el servidor
+            threading.Thread(target=handle_client, args=(secure_conn, addr), daemon=True).start()
 
+# ---------------- HTTP SERVER → REDIRECT ----------------
+
+def run_http_redirect():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((HOST, HTTP_PORT))
+        s.listen(5)
+        print(f"Servidor HTTP escuchando en http://{HOST}:{HTTP_PORT} → redirige a HTTPS")
+
+        while True:
+            conn, addr = s.accept()
+            response = (
+                "HTTP/1.1 301 Moved Permanently\r\n"
+                "Location: https://10.42.0.1/\r\n"
+                "Content-Length: 0\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+            )
+            conn.sendall(response.encode())
+            conn.close()
+
+# ---------------- RUN BOTH ----------------
 
 if __name__ == "__main__":
-    run_server()
-
-    
+    threading.Thread(target=run_http_redirect, daemon=True).start()
+    run_https_server()
