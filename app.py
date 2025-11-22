@@ -26,6 +26,16 @@ CAPTIVE_PROBE_PATHS = {
     "/library/test/success.html",
     "/kindle-wifi/wifistub.html",
 }
+def get_mac(ip: str):
+    try:
+        output = subprocess.check_output(["ip", "neigh", "show", ip]).decode()
+        parts = output.split()
+        if "lladdr" in parts:
+            return parts[parts.index("lladdr") + 1]
+        return None
+    except:
+        return None
+
 
 
 def build_response(
@@ -174,11 +184,23 @@ def handle_client(conn, addr):
             print("Post Data:", post_data)
 
             if check_credentials(username, password):
-                print("Login successful")
                 client_ip = addr[0]
-                os.system(f"sudo ./internet_unlock.sh {client_ip}")
-
-                conn.sendall(redirect("/succes"))
+                os.system(f"ping -c 1 -W 1 {client_ip} > /dev/null")
+                client_mac = get_mac(client_ip)
+                ok, registered = register_session(client_ip, client_mac)
+                
+                if not ok:
+                    print(f"⚠️ SUPLANTACIÓN DETECTADA: IP {client_ip} ya estaba registrada con MAC {registered}, pero llegó MAC {client_mac}")
+                    conn.sendall(build_response(403, b"IP spoofing detected"))
+                    return
+                
+                else:
+                    # ✔️ Aquí solo entra si NO hay suplantación
+                    os.system(f"sudo ./internet_unlock.sh {client_ip} {client_mac}")
+                    print("Login successful")
+                    conn.sendall(redirect("/succes"))
+                    return
+              
             else:
                 print("Login failed")
                 conn.sendall(redirect("/?error=1"))    

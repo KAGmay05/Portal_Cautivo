@@ -2,15 +2,16 @@
 
 CLIENT_IP="$1"
 OUT="enx3687cd8187f5"   # interfaz de salida — ajusta si hace falta
+CLIENT_MAC="$2"
+DB="/var/log/portal_clients.db"
 
-if [ -z "$CLIENT_IP" ]; then
-    echo "Uso: ./internet_unlock.sh <IP_DEL_CLIENTE>"
-    exit 1
-fi
+[[ -z "$CLIENT_IP" || -z "$CLIENT_MAC" ]] && exit 1
 
-# 1) Permitir FORWARD
-iptables -I FORWARD 1 -s "$CLIENT_IP" -j ACCEPT
-iptables -I FORWARD 1 -d "$CLIENT_IP" -j ACCEPT
+# Evitar duplicados
+grep -qi "$CLIENT_MAC $CLIENT_IP" "$DB" || echo "$CLIENT_MAC $CLIENT_IP" >> "$DB"
+
+iptables -I FORWARD -s $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
+iptables -I FORWARD -d $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
 
 # 2) NAT: permitir salida (masquerade)
 iptables -t nat -C POSTROUTING -s "$CLIENT_IP" -o "$OUT" -j MASQUERADE 2>/dev/null || \
