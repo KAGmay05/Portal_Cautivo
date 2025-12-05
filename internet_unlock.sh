@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CLIENT_IP="$1"
-OUT="enx3687cd8187f5"   # interfaz de salida — ajusta si hace falta
+OUT="$3"   # interfaz de salida — ajusta si hace falta
 CLIENT_MAC="$2"
 DB="/var/log/portal_clients.db"
 
@@ -10,19 +10,17 @@ DB="/var/log/portal_clients.db"
 # Evitar duplicados
 grep -qi "$CLIENT_MAC $CLIENT_IP" "$DB" || echo "$CLIENT_MAC $CLIENT_IP" >> "$DB"
 
-iptables -I FORWARD -s $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
-iptables -I FORWARD -d $CLIENT_IP -m mac --mac-source $CLIENT_MAC -j ACCEPT
+iptables -I FORWARD -s $CLIENT_IP -m mac --mac-source $CLIENT_MAC -m comment --comment "portal:$CLIENT_MAC" -j ACCEPT
+iptables -I FORWARD -d $CLIENT_IP -m mac --mac-source $CLIENT_MAC -m comment --comment "portal:$CLIENT_MAC" -j ACCEPT
 
-# 2) NAT: permitir salida (masquerade)
 iptables -t nat -C POSTROUTING -s "$CLIENT_IP" -o "$OUT" -j MASQUERADE 2>/dev/null || \
-iptables -t nat -A POSTROUTING -s "$CLIENT_IP" -o "$OUT" -j MASQUERADE
+iptables -t nat -A POSTROUTING -s "$CLIENT_IP" -o "$OUT" -m comment --comment "portal:$CLIENT_MAC" -j MASQUERADE
 
-# 3) EXCLUSIONES NAT: insertar al principio reglas PREROUTING que hagan ACCEPT para este cliente
-# Esto evita que las reglas globales que redirigen a 10.42.0.1 afecten a este IP.
 iptables -t nat -I PREROUTING 1 -s "$CLIENT_IP" -p udp --dport 53 -j ACCEPT
 iptables -t nat -I PREROUTING 1 -s "$CLIENT_IP" -p tcp --dport 53 -j ACCEPT
 iptables -t nat -I PREROUTING 1 -s "$CLIENT_IP" -p tcp --dport 80 -j ACCEPT
 iptables -t nat -I PREROUTING 1 -s "$CLIENT_IP" -p tcp --dport 443 -j ACCEPT
+
 
 # 4) (Opcional pero útil) Limpiar conexiones trackeadas del cliente para que nuevas conexiones no usen traducciones antiguas.
 # Requiere conntrack-tools instaladas (apt install conntrack)

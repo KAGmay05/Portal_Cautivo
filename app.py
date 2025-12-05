@@ -6,6 +6,8 @@ from urllib.parse import parse_qs
 import ssl
 from users import check_credentials
 import threading
+from session_manager import register_session
+import subprocess
 
 HOST = "0.0.0.0"
 HTTPS_PORT = 443
@@ -36,6 +38,20 @@ def get_mac(ip: str):
     except:
         return None
 
+def get_wan_interface():
+    try:
+        output = subprocess.check_output(
+            ["ip", "route", "get", "8.8.8.8"],
+            stderr=subprocess.DEVNULL
+        ).decode()
+
+        for part in output.split():
+            if part == "dev":
+                return output.split()[output.split().index("dev") + 1]
+
+        return None
+    except Exception:
+        return None
 
 
 def build_response(
@@ -185,8 +201,8 @@ def handle_client(conn, addr):
 
             if check_credentials(username, password):
                 client_ip = addr[0]
-                os.system(f"ping -c 1 -W 1 {client_ip} > /dev/null")
                 client_mac = get_mac(client_ip)
+                wan = get_wan_interface()
                 ok, registered = register_session(client_ip, client_mac)
                 
                 if not ok:
@@ -196,7 +212,7 @@ def handle_client(conn, addr):
                 
                 else:
                     # ✔️ Aquí solo entra si NO hay suplantación
-                    os.system(f"sudo ./internet_unlock.sh {client_ip} {client_mac}")
+                    os.system(f"sudo ./internet_unlock.sh {client_ip} {client_mac} {wan}")
                     print("Login successful")
                     conn.sendall(redirect("/succes"))
                     return
@@ -306,5 +322,6 @@ def run_http_redirect():
 # ---------------- RUN BOTH ----------------
 
 if __name__ == "__main__":
+    os.system(f"sudo ./internet_block.sh")
     threading.Thread(target=run_http_redirect, daemon=True).start()
     run_https_server()

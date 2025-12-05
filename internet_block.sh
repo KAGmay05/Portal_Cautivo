@@ -4,7 +4,6 @@ set -e
 
 INT="wlo1"
 SERVER_IP="10.42.0.1"
-OUT="enx3687cd8187f5"
 HTTP_PORT=80              # puerto donde el portal escucha HTTP (ajusta si usas 8000)
 HTTPS_PORT=443
 
