@@ -1,6 +1,7 @@
 import threading
 import subprocess
 import time
+import os
 
 SESSIONS = {}   # ip → mac
 
@@ -19,7 +20,7 @@ def ip_in_use(ip):
 def get_ip_status(ip):
     try:
         output = subprocess.check_output(["ip", "neigh", "show", ip]).decode()
-        if "FAILED" in output:
+        if "FAILED" in output or "INCOMPLETE" in output:
             return False  
         return True  
     except subprocess.CalledProcessError:
@@ -27,14 +28,10 @@ def get_ip_status(ip):
     
 def clean_up(ip, mac):
     print(f"Limpieza para IP {ip} y MAC {mac}")
-    subprocess.run(f"sudo iptables -D FORWARD -s {ip} -m mac --mac-source {mac} -m comment --comment portal:{mac} -j ACCEPT", shell=True)
-    subprocess.run(f"sudo iptables -D FORWARD -d {ip} -m mac --mac-source {mac} -m comment --comment portal:{mac} -j ACCEPT", shell=True)
-    subprocess.run(f"sudo iptables -t nat -D POSTROUTING -s {ip} -m comment --comment portal:{mac} -j MASQUERADE", shell=True)
+    os.system(f"sudo ./internet_block_ip_mac.sh {ip} {mac}")
 
-    # Limpiar conexiones trackeadas
-    if subprocess.run("command -v conntrack", shell=True).returncode == 0:
-        subprocess.run(f"conntrack -D -s {ip}", shell=True)
-        subprocess.run(f"conntrack -D -d {ip}", shell=True)
+    print("Cliente limpiado. Debe volver al portal al reconectar.")
+
 
 
 def monitor_sessions():
