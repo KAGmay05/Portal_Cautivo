@@ -21,7 +21,7 @@ sysctl -w net.ipv4.ip_forward=1 > /dev/null
 # Políticas por defecto (permitir todo excepto lo que bloqueemos)
 iptables -P INPUT ACCEPT
 iptables -P OUTPUT ACCEPT
-iptables -P FORWARD ACCEPT   # ← Antes era DROP, ahora debe ser ACCEPT
+iptables -P FORWARD DROP   # ← Antes era DROP, ahora debe ser ACCEPT
 
 # Permitir tráfico ya establecido
 iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
